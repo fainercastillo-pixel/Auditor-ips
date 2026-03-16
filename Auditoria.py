@@ -7,7 +7,7 @@ st.title("🏥 Sistema de Auditoría RIPS - IPS")
 archivo_subido = st.file_uploader("Sube el archivo Excel de la IPS", type=["xlsx"])
 
 if archivo_subido is not None:
-   df = pd.read_excel(archivo_subido)
+    df = pd.read_excel(archivo_subido)
     df.columns = df.columns.str.strip().str.upper()
 
     errores_doc = df[df['DOCUMENTO'].isna()]
