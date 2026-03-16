@@ -25,4 +25,8 @@ if archivo_subido is not None:
         st.metric("Dinero en Riesgo", f"${valor_riesgo:,}")
 
     # Usamos una tabla simple que no falla nunca
+    st.subheader("Vista Previa de los Datos")
     st.table(df)
+
+    if total_errores > 0:
+        st.warning(f"Se encontraron {total_errores} errores. Revise las celdas vacías.")
