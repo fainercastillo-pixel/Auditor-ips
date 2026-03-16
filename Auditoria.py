@@ -10,10 +10,12 @@ if archivo_subido is not None:
     df = pd.read_excel(archivo_subido)
     df.columns = df.columns.str.strip().str.upper()
 
+    # Buscamos los errores
     errores_doc = df[df['DOCUMENTO'].isna()]
     errores_cups = df[df['CUPS'].isna()]
     total_errores = len(errores_doc) + len(errores_cups)
     
+    # Mostramos las métricas
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total Registros", len(df))
@@ -24,8 +26,6 @@ if archivo_subido is not None:
         valor_riesgo = df.loc[condicion, 'VALOR'].sum()
         st.metric("Dinero en Riesgo", f"${valor_riesgo:,}")
 
+    # Mostramos la tabla
     st.subheader("Vista Previa de los Datos")
     st.table(df)
-
-    if total_errores > 0:
-        st.warning(f"Se encontraron {total_errores} errores. Revise las celdas vacías.")
