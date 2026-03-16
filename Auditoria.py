@@ -24,4 +24,5 @@ if archivo_subido is not None:
         valor_riesgo = df.loc[condicion, 'VALOR'].sum()
         st.metric("Dinero en Riesgo", f"${valor_riesgo:,}")
 
-    st.dataframe(df.style.highlight_null(color='red'))
+    # Usamos una tabla simple que no falla nunca
+    st.table(df)
