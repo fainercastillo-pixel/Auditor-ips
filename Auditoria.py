@@ -1,5 +1,6 @@
 import streamlit as st
 import pandas as pd
+import io
 
 st.set_page_config(page_title="Auditor IPS Sincelejo", layout="wide")
 st.title("🏥 Sistema de Auditoría RIPS - IPS")
@@ -7,41 +8,39 @@ st.title("🏥 Sistema de Auditoría RIPS - IPS")
 archivo_subido = st.file_uploader("Sube el archivo Excel de la IPS", type=["xlsx"])
 
 if archivo_subido is not None:
-    # Leemos el archivo forzando que DOCUMENTO sea texto
-    df = pd.read_excel(archivo_subido, dtype={'DOCUMENTO': str})
-    df.columns = df.columns.str.strip().str.upper()
-
-    # Buscamos los errores
-    errores_doc = df[df['DOCUMENTO'].isna()]
-    errores_cups = df[df['CUPS'].isna()]
-    total_errores = len(errores_doc) + len(errores_cups)
+    # LEER EXCEL: Forzamos que DOCUMENTO y CUPS se lean como texto para evitar los .000
+    df = pd.read_excel(archivo_subido, dtype={'DOCUMENTO': str, 'CUPS': str})
     
-    # Mostramos las métricas
+    # Limpiamos nombres de columnas y quitamos decimales residuales
+    df.columns = df.columns.str.strip().str.upper()
+    if 'DOCUMENTO' in df.columns:
+        df['DOCUMENTO'] = df['DOCUMENTO'].fillna('').astype(str).str.replace(r'\.0$', '', regex=True)
+    if 'CUPS' in df.columns:
+        df['CUPS'] = df['CUPS'].fillna('').astype(str).str.replace(r'\.0$', '', regex=True)
+
+    # Identificar errores
+    errores_condicion = (df['DOCUMENTO'] == '') | (df['CUPS'] == '')
+    df_errores = df[errores_condicion]
+    total_errores = len(df_errores)
+    
+    # Métricas
     col1, col2, col3 = st.columns(3)
     with col1:
         st.metric("Total Registros", len(df))
     with col2:
         st.metric("Errores Detectados", total_errores)
     with col3:
-        condicion = df['DOCUMENTO'].isna() | df['CUPS'].isna()
-        valor_riesgo = df.loc[condicion, 'VALOR'].sum()
-        st.metric("Dinero en Riesgo", f"${valor_riesgo:,}")
+        valor_riesgo = df.loc[errores_condicion, 'VALOR'].sum()
+        st.metric("Dinero en Riesgo", f"${valor_riesgo:,.0f}")
 
-    # Mostramos la tabla
-    st.subheader("Vista Previa de los Datos")
-    st.table(df)
-    # 1. Creamos el filtro de errores para el reporte
-    df_errores = df[df['DOCUMENTO'].isna() | df['CUPS'].isna()]
-
+    # Mostrar Tabla (SOLO UNA VEZ)
     st.subheader("Vista Previa de los Datos")
     st.table(df.head(10)) 
 
-    # 2. Si hay errores, mostramos el botón de descarga
-    if not df_errores.empty:
-        st.warning(f"⚠️ Se encontraron {len(df_errores)} registros con errores.")
+    # Botón de Descarga
+    if total_errores > 0:
+        st.warning(f"⚠️ Se encontraron {total_errores} registros con errores.")
         
-        # Convertimos los errores a un Excel para descargar
-        import io
         output = io.BytesIO()
         with pd.ExcelWriter(output, engine='openpyxl') as writer:
             df_errores.to_excel(writer, index=False, sheet_name='Errores')
@@ -53,4 +52,4 @@ if archivo_subido is not None:
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
         )
     else:
-        st.success("✅ ¡Excelente! No se encontraron errores en DOCUMENTO o CUPS.")
+        st.success("✅ ¡Excelente! No se encontraron errores.")
